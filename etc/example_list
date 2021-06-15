@@ -30,6 +30,9 @@ Library/Application Support/BraveSoftware/Brave-Browser/Default/Preferences
 ## datovka
 .dsgui
 
+## git
+.gitconfig
+
 ## iterm2
 Library/Preferences/com.googlecode.iterm2.plist
 
@@ -38,6 +41,9 @@ Library/Application Support/Signal
 
 ## ssh 
 .ssh
+
+## vim
+.vimrc
 
 ## vscode
 Library/Application Support/Code/User/snippets
