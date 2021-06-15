@@ -1,0 +1,310 @@
+#!/bin/zsh
+
+#Version 0.1
+# 20210615
+###Initial version
+
+
+
+
+. ../etc/backup.conf
+
+#### We prepare some variables 
+
+COMPUTER="$(hostname)"
+BACKUP_LIST=${backupListDir}/${USERN}_list #FILE FOR the LIST OF BACKUPS
+#@@ Only for one user so no need to use USERN
+#TARGET_DIR=${backupDir}/$USERN
+TARGET_DIR=${backupDir}
+TARGET_FILE="${TARGET_DIR}/data_backup_`date +%Y%m%d_%k%M%S`"
+OLD_TARGET_FILE="${TARGET_DIR}/data_backup_old.tar.bz2"
+LOG_FILE="${logDir}/${HOSTNAME}_backup.log"
+
+
+
+
+#Some Functions....
+
+
+
+delete_not_useful_files()
+{
+
+  DELETE=`grep -i .mozilla $BACKUP_LIST `
+  if [ $? -eq 0 ] ; then #deleting cache
+    for i in `find $DELETE -type f |grep -i cache`
+    do
+      rm $i
+    done
+    log "Deleting cache from $DELETE"
+  fi
+}
+
+
+#### This function is printing the Error got in the error_handler and exiting
+error() {
+  MSG=$1
+  EXIT_CODE=$2
+  
+  if [ -f ${TARGET_FILE}.tar.bz2 ] ; then rm ${TARGET_FILE}.tar.bz2 ; fi #Remove the new created file
+  if [ -f ${TARGET_FILE}.zip ] ; then rm ${TARGET_FILE}.zip ; fi #Remove the new created encrypted file
+  rm  ${copy_tmp_list} ${exclude_tmp_list} > /dev/null 2>&1
+  
+  echo "ERR: `hostname`: $MSG   Aborted!"   | tee  ${LOG_FILE}
+  echo "`date +%Y%m%d__%k:%M:%S`: `hostname`" | tee  ${LOG_FILE}
+  exit $EXIT_CODE
+}
+
+
+log() {  
+  echo  -e "`hostname`: $1" |tee ${LOG_FILE}
+}
+
+
+#### This function is just printing the Warning got in the warning_handler
+warning() {
+  echo -e "$1"
+  echo -e "WARNING: `date +%Y%m%d__%k:%M:%S`: `hostname`: $1" >> ${LOG_FILE}
+}
+
+
+
+
+#### This function is handling the errors and writting them in the logs and in the screen
+#### And going out from the program :) 
+warning_handler() {
+
+  WAR_NUMBER=$1
+  case $WAR_NUMBER in
+    
+    "1")
+      MSG="We could not delete the unencrypted Backup ${TARGET_FILE}.tar.bz2"
+     ;;
+
+    "2")
+      MSG="Log dir ${logDir} does not exist, creating it ...."
+    ;;
+
+    "3")
+      MSG="Directory for the second copy $directoryFor2Copy does not exist"
+    ;;
+
+    "4")
+      MSG="Cannot copy the backup file to $directoryFor2Copy"
+    ;;   
+
+    *)
+      MSG="Undefined Warning !!"
+    ;;
+  esac
+
+  ### Here we call the warning function so we print it
+  warning $MSG
+
+}
+
+
+
+
+
+#### This function is handling the errors and writting them in the logs and in the screen
+#### And going out from the program :) 
+error_handler() {
+
+  ERR_NUMBER=$1
+  case $ERR_NUMBER in
+    
+    "1")
+      MSG="Backup list does not exist ${backupListDir}/${USER}_list"
+     ;;
+
+    "2")
+      MSG="File list ${backupListDir}/${USER}_list empty"
+    ;;
+
+    "3")
+      MSG="Error Compressing the files"
+    ;;
+
+    "4")
+      MSG="Target dir $TARGET_DIR  does not exist"
+    ;;
+    "5")
+      MSG="Error when encrypting the file..."
+    ;;
+
+    *)
+      MSG="Undefined Error"
+    ;;
+  esac
+
+  ### Here we call the error to finish the execution
+  error $MSG $ERR_NUMBER
+
+}
+
+
+
+#### This function just printing the header when executing
+header() {
+
+  echo "######################################################################" |tee ${LOG_FILE}
+  echo "##                                                                  ##" |tee ${LOG_FILE}
+  echo "##                         Mac  backup                              ##" |tee ${LOG_FILE}
+  echo "##                                                                  ##" |tee ${LOG_FILE}
+  echo "######################################################################" |tee ${LOG_FILE}
+  echo "" |tee ${LOG_FILE}
+  echo Starting backup on $(hostname) on $(date +%x%t%t%k:%M:%S) |tee ${LOG_FILE}
+
+}
+
+
+### This function will print the files to backup and to exclude
+### First parameter the files to backup
+### second parameter the files to exclude
+print_files() {
+
+  echo "Files to be backup:" |tee ${LOG_FILE}
+  echo $1 | tr " " "\n" |tee  ${LOG_FILE}
+  echo -e "\n\n" |tee  ${LOG_FILE}
+  echo "Files to be excluded:" |tee ${LOG_FILE}
+  echo $2 | tr " " "\n" |tee  ${LOG_FILE}
+
+}
+
+
+#@@@@@@@@@@@@@@@@@@@@@@@   HERE WE GO!! @@@@@@@@@@@@@@@@@@@@@@@@@@@
+#@@@                                                            @@@
+#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+
+
+
+### Here we write some header for the logs :) 
+header
+
+## We get the list of files
+BACKUP_LIST=${backupListDir}/${USER}_list #FILE FOR the LIST OF BACKUPS
+
+##### Some checks Prior to start doing stuff
+
+if ! [ -f "$BACKUP_LIST" ] ; then  error_handler 1; fi
+
+# Check if the Target DIR exists
+if ! [ -d $TARGET_DIR ] ; then error_handler 4; fi
+
+# Check if the logDirexists
+if ! [ -d $logDir ] ; then 
+  warning 2
+  mkdir -p $logDir ||
+    error 6  
+fi
+
+
+
+# Get backup files from the user - Removing the excluding files
+filesB=`sed "/^#/d" $BACKUP_LIST | grep -v "^\!" |grep -v "^$"|tr "\n" " "`
+# Check if the file list exists for the user
+if  [ -z "$filesB" ] ; then  error_handler 2; fi
+
+# Get excluding files with the --exclude
+excludingPart=""
+excludeFiles="$(grep "^\!" $BACKUP_LIST|cut -d '!' -f2|tr "\n" "@" |sed 's/.$//')"
+
+
+IFS="@"
+copy_tmp_list=$(mktemp)
+exclude_tmp_list=$(mktemp)
+
+#Creating list for copying files
+#for i in $(for i in $($SED "/^#/d" $BACKUP_LIST | $GREP -v "^\!" |$GREP -v "^$"|tr "\n" "@"  ); do if echo $i | $GREP -q "^/" ; then echo \"$i\"; else ; echo \"$HOME/"$i"\";fi;done)
+for i in $($SED "/^#/d" $BACKUP_LIST | $GREP -v "^\!" |$GREP -v "^$"|tr "\n" "@" |sed 's/.$//') ; do  
+
+    ## We check for whole paths so first
+    if echo $i | $GREP -q "^/" ; then
+      if ls "$i" > /dev/null 2>&1 ; then echo "$i" >> ${copy_tmp_list}; else warning "\"$i\" not found" ; fi
+    else
+      if ls "$HOME/$i" > /dev/null 2>&1 ; then echo "$HOME/$i" >> ${copy_tmp_list}; else warning "\"$HOME/$i\" not found" ; fi
+    fi   
+done
+
+IFS="@"
+## For excluding the files
+for i in $(echo $excludeFiles) ; do
+    ## We check for whole paths so first
+    if echo $i | $GREP -q "^/" ; then
+      export excludingPart="--exclude=\"${i}\" "$excludingPart"" 
+      echo "$i" >> ${exclude_tmp_list} 
+    else
+      export excludingPart="--exclude=\"$HOME/${i}\" "$excludingPart""
+      echo "$HOME/$i" >> ${exclude_tmp_list} 
+    fi    
+done
+
+
+
+filesB=$(cat $copy_tmp_list)
+excludeFiles=$(cat $exclude_tmp_list)
+
+### If empty backup files we give error
+if  [ -z "$filesB" ] ; then  error_handler 2; fi
+
+
+
+
+
+### We print the files
+print_files $filesB $excludeFiles
+
+
+### We create the --exclude part of the tar command
+for fileNO in `echo ${excludeFiles} | tr " " "\n"`
+  do
+    excludingPart="--exclude=${fileNO} $excludingPart"
+    echo $excludingPart
+done
+
+
+#### We start the compression
+log "Starting the tar of the files ..."
+
+${TAR} cjf "${TARGET_FILE}.tar.bz2 -T $copy_tmp_list ${excludingPart}" >>${LOG_FILE} 2>>${LOG_FILE}  ||
+  error_handler 3
+
+
+ ### Checking some options and acting accordingly
+if  $encryptFile ; then
+  log "Encryption for file selected, please follow instructions ..."
+  ${ZIP} -1 -e ${TARGET_FILE}.zip ${TARGET_FILE}.tar.bz2 >>${LOG_FILE} 2>>${LOG_FILE}  ||
+    error_handler 4
+  
+  ### If we are here we are ok so we can delete the non ecnrypted file
+  rm ${TARGET_FILE}.tar.bz2 >>${LOG_FILE} 2>>${LOG_FILE} ||
+    warning_handler 1    
+  
+  END_FILE="${TARGET_FILE}.zip"
+
+else
+  END_FILE="${TARGET_FILE}.tar.bz2"
+fi
+
+
+### Finally to copy the file to a different location if needed
+
+if  $copyToAnotherLocation ; then
+  log "Copying the file ${END_FILE} to ${directoryFor2Copy} ..."
+  # Check if the logDirexists
+  if ! [ -d $directoryFor2Copy ] ; then  
+    warning 3
+  
+  else    
+    cp ${END_FILE}  ${directoryFor2Copy} >>${LOG_FILE} 2>>${LOG_FILE} ||
+    warning 4
+    
+  fi
+    
+
+log "Backup Complete $END_FILE created...."
+log "Removing temp files ${copy_tmp_list} and ${exclude_tmp_list} ..."
+rm  ${copy_tmp_list} ${exclude_tmp_list} > /dev/null 2>&1
+log ""

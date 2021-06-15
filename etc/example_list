@@ -1,0 +1,56 @@
+# List for backup make the backup, wildcats NOT allowed
+
+### Substitute example_list for your $USER_list
+### cp example_list $USER_list
+
+### Some system Configuration
+/etc/hosts
+/etc/fstab
+
+
+
+### Some user configurations
+
+
+## 1password
+Library/Preferences/com.agilebits.onepassword4.plist
+Library/Preferences/ws.agile.1Password.plist
+
+
+## aws
+.aws
+
+## ansible
+.ansible
+.ansible.cfg
+
+## brave
+Library/Application Support/BraveSoftware/Brave-Browser/Default/Preferences
+
+## datovka
+.dsgui
+
+## iterm2
+Library/Preferences/com.googlecode.iterm2.plist
+
+## signal
+Library/Application Support/Signal
+
+## ssh 
+.ssh
+
+## vscode
+Library/Application Support/Code/User/snippets
+Library/Application Support/Code/User/keybindings.json
+Library/Application Support/Code/User/settings.json
+
+
+## zsh
+.zprofile
+.zshrc
+
+
+#### For excluding files just use ! and the file as for example
+#!Library/Application Support/mozilla/Cache
+#!/etc/caca
+
