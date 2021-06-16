@@ -58,5 +58,5 @@ Library/Application Support/Code/User/settings.json
 
 #### For excluding files just use ! and the file as for example
 #!Library/Application Support/mozilla/Cache
-#!/etc/caca
+!/etc/caca
 

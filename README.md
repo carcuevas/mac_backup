@@ -1,6 +1,13 @@
 # Script for Make some Local backup of one user in MacOS/Linux
 
-# NOT TESTED YET !!!!!!!!!!!
+## Requirements:
+
+### In Mac
+Install the following 
+
+```
+brew install coreutils gnupg
+```
 
 ## Why another script for this
 

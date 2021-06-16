@@ -1,8 +1,11 @@
 #!/bin/zsh
 
-#Version 0.1
-# 20210615
-###Initial version
+###########################
+## mac_backup            ##
+###########################
+
+### With this we can do easily backups of our files and setting in MacOS
+### Also we can ecnrypted and to copy it in a different directory.... 
 
 
 
@@ -15,34 +18,38 @@ COMPUTER="$(hostname)"
 BACKUP_LIST=${backupListDir}/${USERN}_list #FILE FOR the LIST OF BACKUPS
 #@@ Only for one user so no need to use USERN
 #TARGET_DIR=${backupDir}/$USERN
-TARGET_DIR=${backupDir}
-TARGET_FILE="${TARGET_DIR}/data_backup_$(date +%Y%m%d_%k%M%S)"
+TARGET_DIR="${backupDir}"
+BACKUP_BASE_NAME="data_backup_$(hostname)_${USER}_$(date +%Y%m%d_%k%M%S)"
+TARGET_FILE="${TARGET_DIR}${BACKUP_BASE_NAME}"
 OLD_TARGET_FILE="${TARGET_DIR}/data_backup_old.tar.bz2"
-LOG_FILE="${logDir}/${HOSTNAME}_backup.log"
+LOG_FILE="${logDir}/$(hostname)_backup.log"
 
 
 
 
 #Some Functions....
 
+#### This function will ask for password when needed to encrypt
+function read_password(){
 
+  read -s "?Enter encryption password: " "NEWPASS1"
+  log
+  read -s "?Repeat the new encryption password: " "NEWPASS2"
+  log
 
-delete_not_useful_files()
-{
+  #### We check if we match the 2 passwords match
+  if [ $NEWPASS1 != $NEWPASS2 ] ; then error "The encryption passwords didn't match... Exiting" 10; fi
 
-  DELETE=$(grep -i .mozilla $BACKUP_LIST)
-  if [ $? -eq 0 ] ; then #deleting cache
-    for i in $(find $DELETE -type f |grep -i cache)
-    do
-      rm $i
-    done
-    log "Deleting cache from $DELETE"
-  fi
+  ## If we are here we can send the password
+
+  passy=$NEWPASS1
+
 }
 
 
+
 #### This function is printing the Error got in the error_handler and exiting
-error() {
+function error() {
   MSG=$1
   EXIT_CODE=$2
   
@@ -50,19 +57,24 @@ error() {
   if [ -f ${TARGET_FILE}.zip ] ; then rm ${TARGET_FILE}.zip ; fi #Remove the new created encrypted file
   rm  ${copy_tmp_list} ${exclude_tmp_list} > /dev/null 2>&1
   
-  echo "ERR: $(hostname): $MSG   Aborted!"   | tee  ${LOG_FILE}
-  echo "$(date +%Y%m%d__%k:%M:%S): $(hostname)" | tee  ${LOG_FILE}
-  exit $EXIT_CODE
+  echo "ERR: $(hostname): $MSG   Aborted!"   | tee -a  ${LOG_FILE}
+  echo "$(date +%Y%m%d__%k:%M:%S): $(hostname)" | tee -a  ${LOG_FILE}
+  echo "Check $LOG_FILE ..."
+  exit $(echo $((0 + EXIT_CODE)))
 }
 
 
-log() {  
-  echo  -e "$(hostname): $1" |tee ${LOG_FILE}
+function log() {  
+  if [ -z $1 ] ; then 
+    echo "" |tee -a ${LOG_FILE}
+  else
+    echo  -e "$(hostname): $1" |tee -a ${LOG_FILE}
+  fi
 }
 
 
 #### This function is just printing the Warning got in the warning_handler
-warning() {
+function warning() {
   echo -e "$1"
   echo -e "WARNING: $(date +%Y%m%d__%k:%M:%S): $(hostname): $1" >> ${LOG_FILE}
 }
@@ -72,7 +84,7 @@ warning() {
 
 #### This function is handling the errors and writting them in the logs and in the screen
 #### And going out from the program :) 
-warning_handler() {
+function warning_handler() {
 
   WAR_NUMBER=$1
   case $WAR_NUMBER in
@@ -109,7 +121,7 @@ warning_handler() {
 
 #### This function is handling the errors and writting them in the logs and in the screen
 #### And going out from the program :) 
-error_handler() {
+function error_handler() {
 
   ERR_NUMBER=$1
   case $ERR_NUMBER in
@@ -146,15 +158,19 @@ error_handler() {
 
 
 #### This function just printing the header when executing
-header() {
+function header() {
 
-  echo "######################################################################" |tee ${LOG_FILE}
-  echo "##                                                                  ##" |tee ${LOG_FILE}
-  echo "##                         Mac  backup                              ##" |tee ${LOG_FILE}
-  echo "##                                                                  ##" |tee ${LOG_FILE}
-  echo "######################################################################" |tee ${LOG_FILE}
-  echo "" |tee ${LOG_FILE}
-  echo Starting backup on $(hostname) on $(date +%x%t%t%k:%M:%S) |tee ${LOG_FILE}
+  echo "######################################################################" |tee -a ${LOG_FILE}
+  echo "##                                                                  ##" |tee -a ${LOG_FILE}
+  echo "##                         Mac  backup                              ##" |tee -a ${LOG_FILE}
+  echo "##                                                                  ##" |tee -a ${LOG_FILE}
+  echo "######################################################################" |tee -a ${LOG_FILE}
+  echo "" |tee -a ${LOG_FILE}
+  echo Starting backup on $(hostname) on $(date +%x%t%t%k:%M:%S) |tee -a ${LOG_FILE}
+  echo "" |tee -a ${LOG_FILE}
+  echo "" |tee -a ${LOG_FILE}
+  echo "Logs in ${LOG_FILE}" |tee -a ${LOG_FILE}
+
 
 }
 
@@ -162,15 +178,49 @@ header() {
 ### This function will print the files to backup and to exclude
 ### First parameter the files to backup
 ### second parameter the files to exclude
-print_files() {
+function print_files() {
 
-  echo "Files to be backup:" |tee ${LOG_FILE}
-  echo $1 | tr " " "\n" |tee  ${LOG_FILE}
-  echo -e "\n\n" |tee  ${LOG_FILE}
-  echo "Files to be excluded:" |tee ${LOG_FILE}
-  echo $2 | tr " " "\n" |tee  ${LOG_FILE}
+  
+  echo -e "\n\nFiles to be backup:" |tee -a ${LOG_FILE}
+  echo -e "---------------------------------" |tee -a ${LOG_FILE}
+  cat $1 |tee -a  ${LOG_FILE}
+  echo -e "\n\n" |tee -a  ${LOG_FILE}
+  echo "Files to be excluded:" |tee -a ${LOG_FILE}
+  echo -e "---------------------------------" |tee -a ${LOG_FILE}
+  cat $2 |tee -a  ${LOG_FILE}
+  echo -e "\n\n" |tee -a  ${LOG_FILE}
 
 }
+
+
+
+#### This function will do the zip encryption of the file
+function encrypt_file(){
+
+  log "Encrypting the file ..."
+  cd $TARGET_DIR ||
+    error_handler 4
+
+  ${EXPECT} <(cat << EOF
+spawn ${ZIP} -1 -e ${BACKUP_BASE_NAME}.zip ${BACKUP_BASE_NAME}.tar.bz2
+expect "*?assword:*"
+send "${passy}\r"
+expect "*?assword:*"
+send "${passy}\r"
+send "\r"
+interact
+EOF
+)  || 
+    error_handler 4
+
+  
+  ### If we are here we are ok so we can delete the non ecnrypted file
+  rm ${TARGET_FILE}.tar.bz2 >>${LOG_FILE} 2>>${LOG_FILE} ||
+    warning_handler 1    
+  
+}
+
+
 
 
 #@@@@@@@@@@@@@@@@@@@@@@@   HERE WE GO!! @@@@@@@@@@@@@@@@@@@@@@@@@@@
@@ -179,9 +229,10 @@ print_files() {
 
 
 
-
+echo "TARGET_DIR=$TARGET_DIR TARGET_FILE=${TARGET_FILE}"
 ### Here we write some header for the logs :) 
 header
+
 
 ## We get the list of files
 BACKUP_LIST=${backupListDir}/${USER}_list #FILE FOR the LIST OF BACKUPS
@@ -207,6 +258,18 @@ filesB=$(sed "/^#/d" $BACKUP_LIST | grep -v "^\!" |grep -v "^$"|tr "\n" " ")
 # Check if the file list exists for the user
 if  [ -z "$filesB" ] ; then  error_handler 2; fi
 
+
+##### We ask for the encryption password if we want to encrypt
+if  $encryptFile ; then
+  log
+  log "We have encryptFile=$encryptFile so asking for encryption password..."
+  log
+  read_password 
+fi
+
+
+
+
 # Get excluding files with the --exclude
 excludingPart=""
 excludeFiles="$(grep "^\!" $BACKUP_LIST|cut -d '!' -f2|tr "\n" "@" |sed 's/.$//')"
@@ -218,67 +281,96 @@ exclude_tmp_list=$(mktemp)
 
 #Creating list for copying files
 #for i in $(for i in $($SED "/^#/d" $BACKUP_LIST | $GREP -v "^\!" |$GREP -v "^$"|tr "\n" "@"  ); do if echo $i | $GREP -q "^/" ; then echo \"$i\"; else ; echo \"$HOME/"$i"\";fi;done)
-for i in $($SED "/^#/d" $BACKUP_LIST | $GREP -v "^\!" |$GREP -v "^$"|tr "\n" "@" |sed 's/.$//') ; do  
 
-    ## We check for whole paths so first
-    if echo $i | $GREP -q "^/" ; then
-      if ls "$i" > /dev/null 2>&1 ; then echo "$i" >> ${copy_tmp_list}; else warning "\"$i\" not found" ; fi
-    else
-      if ls "$HOME/$i" > /dev/null 2>&1 ; then echo "$HOME/$i" >> ${copy_tmp_list}; else warning "\"$HOME/$i\" not found" ; fi
-    fi   
-done
+#### Here we decide if we want to have the whole path in the tar or just the relative to the $HOME
+if  $wholePathInTar ; then
 
-IFS="@"
-## For excluding the files
-for i in $(echo $excludeFiles) ; do
-    ## We check for whole paths so first
-    if echo $i | $GREP -q "^/" ; then
-      export excludingPart="--exclude=\"${i}\" "$excludingPart"" 
-      echo "$i" >> ${exclude_tmp_list} 
-    else
-      export excludingPart="--exclude=\"$HOME/${i}\" "$excludingPart""
-      echo "$HOME/$i" >> ${exclude_tmp_list} 
-    fi    
-done
+  #### IF we want to have the whole path in the tar
+  for i in $($SED "/^#/d" $BACKUP_LIST | $GREP -v "^\!" |$GREP -v "^$"|tr "\n" "@" |sed 's/.$//') ; do  
 
+      ## We check for whole paths so first
+      if echo $i | $GREP -q "^/" ; then
+        if ls "$i" > /dev/null 2>&1 ; then echo "$i" >> ${copy_tmp_list}; else warning "\"$i\" not found" ; fi
+      else
+        if ls "$HOME/$i" > /dev/null 2>&1 ; then echo "$HOME/$i" >> ${copy_tmp_list}; else warning "\"$HOME/$i\" not found" ; fi
+      fi   
+  done
 
-
-filesB=$(cat $copy_tmp_list)
-excludeFiles=$(cat $exclude_tmp_list)
-
-### If empty backup files we give error
-if  [ -z "$filesB" ] ; then  error_handler 2; fi
-
-
-### We print the files
-print_files $filesB $excludeFiles
-
-
-#### We start the compression
-log "Starting the tar of the files ..."
-
-${TAR} cjf "${TARGET_FILE}.tar.bz2 -T $copy_tmp_list ${excludingPart}" >>${LOG_FILE} 2>>${LOG_FILE}  ||
-  error_handler 3
-
-
- ### Checking some options and acting accordingly
-if  $encryptFile ; then
-  log "Encryption for file selected, please follow instructions ..."
-  ${ZIP} -1 -e ${TARGET_FILE}.zip ${TARGET_FILE}.tar.bz2 >>${LOG_FILE} 2>>${LOG_FILE}  ||
-    error_handler 4
+  ## For excluding the files
+  for i in $(echo $excludeFiles) ; do
+      ## We check for whole paths so first
+      if echo $i | $GREP -q "^/" ; then
+        export excludingPart="--exclude=\"${i}\" "$excludingPart"" 
+        echo "$i" >> ${exclude_tmp_list} 
+      else
+        export excludingPart="--exclude=\"$HOME/${i}\" "$excludingPart""
+        echo "$HOME/$i" >> ${exclude_tmp_list} 
+      fi    
+  done
   
-  ### If we are here we are ok so we can delete the non ecnrypted file
-  rm ${TARGET_FILE}.tar.bz2 >>${LOG_FILE} 2>>${LOG_FILE} ||
-    warning_handler 1    
-  
-  END_FILE="${TARGET_FILE}.zip"
-
 else
-  END_FILE="${TARGET_FILE}.tar.bz2"
+
+  #### IF we want to have the relative path in the tar
+
+  for i in $($SED "/^#/d" $BACKUP_LIST | $GREP -v "^\!" |$GREP -v "^$"|tr "\n" "@" |sed 's/.$//') ; do  
+
+      ## We check for whole paths so first
+      if echo $i | $GREP -q "^/" ; then
+        if ls "$i" > /dev/null 2>&1 ; then echo "$i" >> ${copy_tmp_list}; else warning "\"$i\" not found" ; fi
+      else
+        if ls "$HOME/$i" > /dev/null 2>&1 ; then echo "$i" >> ${copy_tmp_list}; else warning "\"$HOME/$i\" not found" ; fi
+      fi   
+  done
+
+  ## For excluding the files
+  for i in $(echo $excludeFiles) ; do
+      ## We check for whole paths so first
+      if echo $i | $GREP -q "^/" ; then
+        export excludingPart="--exclude=\"${i}\" "$excludingPart"" 
+        echo "$i" >> ${exclude_tmp_list} 
+      else
+        export excludingPart="--exclude=\"$HOME/${i}\" "$excludingPart""
+        echo "$HOME/$i" >> ${exclude_tmp_list} 
+      fi    
+  done
+
 fi
 
 
-### Finally to copy the file to a different location if needed
+
+
+
+### If empty backup files we give error
+if ! [ -s $copy_tmp_list ] ; then  error_handler 2; fi
+
+
+
+### We print the files
+print_files $copy_tmp_list $exclude_tmp_list
+
+
+#### We start the compression
+log "Going to the directory $HOME ..."
+log ""
+cd $HOME
+log "Starting the tar of the files into ${TARGET_FILE}.tar.bz2..."
+
+${TAR} cjf ${TARGET_FILE}.tar.bz2 -T $copy_tmp_list ${excludingPart} >>${LOG_FILE} 2>>${LOG_FILE}  ||
+  error_handler 3
+
+
+### IF we have something in passy it means that we could save some password
+## and it means that we want to use encryption
+if  ! [ -z $passy ]; then 
+  encrypt_file
+  END_FILE="${TARGET_FILE}.zip"
+else
+  END_FILE="${TARGET_FILE}.tar.bz2"  
+fi
+  
+
+
+# ### Finally to copy the file to a different location if needed
 
 if  $copyToAnotherLocation ; then
   log "Copying the file ${END_FILE} to ${directoryFor2Copy} ..."
@@ -288,12 +380,11 @@ if  $copyToAnotherLocation ; then
   
   else    
     cp ${END_FILE}  ${directoryFor2Copy} >>${LOG_FILE} 2>>${LOG_FILE} ||
-    warning 4
-    
-  fi
+      warning 4
+  fi  
+fi
     
 
 log "Backup Complete $END_FILE created...."
 log "Removing temp files ${copy_tmp_list} and ${exclude_tmp_list} ..."
 rm  ${copy_tmp_list} ${exclude_tmp_list} > /dev/null 2>&1
-log ""
