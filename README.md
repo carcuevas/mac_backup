@@ -6,7 +6,7 @@
 Install the following 
 
 ```
-brew install coreutils gnupg
+brew install coreutils
 ```
 
 ## Why another script for this
