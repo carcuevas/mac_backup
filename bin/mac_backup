@@ -326,10 +326,10 @@ else
   for i in $(echo $excludeFiles) ; do
       ## We check for whole paths so first
       if echo $i | $GREP -q "^/" ; then
-        export excludingPart="--exclude=\"${i}\" "$excludingPart"" 
+        export excludingPart="--exclude='${i}' "$excludingPart"" 
         echo "$i" >> ${exclude_tmp_list} 
       else
-        export excludingPart="--exclude=\"$HOME/${i}\" "$excludingPart""
+        export excludingPart="--exclude='${i}' "$excludingPart""
         echo "$HOME/$i" >> ${exclude_tmp_list} 
       fi    
   done
@@ -355,7 +355,9 @@ log ""
 cd $HOME
 log "Starting the tar of the files into ${TARGET_FILE}.tar.bz2..."
 
-${TAR} cjf ${TARGET_FILE}.tar.bz2 -T $copy_tmp_list ${excludingPart} >>${LOG_FILE} 2>>${LOG_FILE}  ||
+echo "${TAR} cjf  ${TARGET_FILE}.tar.bz2  ${excludingPart} -T $copy_tmp_list " >> ${LOG_FILE}
+
+${TAR} cjf ${TARGET_FILE}.tar.bz2  ${excludingPart} -T $copy_tmp_list >>${LOG_FILE} 2>>${LOG_FILE}  ||
   error_handler 3
 
 

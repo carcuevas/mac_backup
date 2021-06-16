@@ -26,6 +26,8 @@ Library/Preferences/ws.agile.1Password.plist
 
 ## brave
 Library/Application Support/BraveSoftware/Brave-Browser/Default/Preferences
+Library/Application Support/BraveSoftware/Brave-Browser/Default
+Library/Preferences/com.brave.Browser.plist
 
 ## datovka
 .dsgui
@@ -36,8 +38,44 @@ Library/Application Support/BraveSoftware/Brave-Browser/Default/Preferences
 ## iterm2
 Library/Preferences/com.googlecode.iterm2.plist
 
+## Some MacOS things
+Library/KeyBindings/DefaultKeyBinding.dict
+.MacOSX
+Library/PDF Services
+Library/Preferences/com.apple.symbolichotkeys.plist
+Library/Scripts
+Library/Speech/Speakable Items
+Library/Workflows
+Library/Application Support/Automator
+Library/Keyboard
+Library/Keyboard Layouts
+Library/KeyboardServices
+Library/PersonalizationPortrait
+Library/Preferences/.GlobalPreferences.plist
+Library/Preferences/.GlobalPreferences_m.plist
+Library/Preferences/com.apple.Automator.plist
+Library/Preferences/com.apple.finder.plist
+Library/Preferences/com.apple.Spotlight.plist
+Library/Preferences/com.apple.Preferences.plist
+#Library/Preferences/
+#Library/Preferences/
+#Library/Preferences/
+#Library/Preferences/
+#Library/Preferences/
+#Library/Preferences/
+#Library/Preferences/
+#Library/Preferences/
+
+
+
+
+
+
+
+
 ## signal
 Library/Application Support/Signal
+Library/Preferences/org.whispersystems.signal-desktop.plist
 
 ## ssh 
 .ssh
@@ -57,6 +95,5 @@ Library/Application Support/Code/User/settings.json
 
 
 #### For excluding files just use ! and the file as for example
-#!Library/Application Support/mozilla/Cache
-!/etc/caca
-
+!Library/Application Support/BraveSoftware/Brave-Browser/Default/Service Worker/CacheStorage
+!Library/Application Support/Signal/attachments.noindex
