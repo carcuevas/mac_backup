@@ -11,7 +11,8 @@
 
 ### Some user configurations
 ## Some directories from the user for example
-Documents/automator
+Documents
+work
 
 ## 1password
 Library/Preferences/com.agilebits.onepassword4.plist
@@ -38,10 +39,13 @@ Library/Preferences/com.brave.Browser.plist
 
 ## iterm2
 Library/Preferences/com.googlecode.iterm2.plist
+.config/iterm2
+.oh-my-zsh
 
 ## Some MacOS things
 Library/KeyBindings/DefaultKeyBinding.dict
 .MacOSX
+Library/Services
 Library/PDF Services
 Library/Preferences/com.apple.symbolichotkeys.plist
 Library/Scripts
