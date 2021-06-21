@@ -13,6 +13,7 @@
 ## Some directories from the user for example
 Documents
 work
+backup/mac_backup
 
 ## 1password
 Library/Preferences/com.agilebits.onepassword4.plist
